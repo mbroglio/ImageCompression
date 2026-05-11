@@ -25,3 +25,10 @@ Implement a Python-based open-source desktop application for image compression u
 - **GUI Framework**: Opted for `customtkinter` for a better user experience over standard `tkinter`.
 - **Image Boundaries**: Edge remainders will be discarded as per requirements when splitting into $F \times F$ blocks.
 - **Value Clamping**: Final pixel values will be rounded to nearest integer and explicitly clipped to $[0, 255]$ range before casting to `uint8`.
+
+## 5. Refactoring & Clean Up
+During the latest code review, the following cleanups and optimizations were enforced to strictly adhere to the project specifications and ensure zero dead code:
+- **Math/DCT Simplification**: Replaced explicit loop-based matrix multiplications in `custom_dct2` with heavily optimized standard NumPy matrix operations (`D @ f @ D.T`), successfully reducing an overly engineered 10-line function into 3 clean, highly readable lines while maintaining the $O(N^3)$ requirement.
+- **Removal of Dead Code**: Completely removed the redundant `custom_idct1` and `custom_idct2` functions. The project spec only required using the fast IDCT from the library for decompression, so manual implementations were leftover over-engineering and therefore discarded. The unused `./mathlab/` directory containing MATLAB translation source files was explicitly deleted as MATLAB is excluded from the environment stack.
+- **Logic Correction (Thresholding)**: Adjusted the frequency threshold masking from `(k + l) > d` to `(k + l) >= d` to strictly respect the original math specification logic constraint.
+- **GUI and Naming Formatting**: GUI variable names were standardized (`F` to `macroblock_size`, `d` to `cutoff_threshold`) internally within the processing block to clarify domain context, while keeping the UI labels mapped to $F$ and $d$ intact. Extraneous visual components like `ImageTk` from PIL imports that were inactive were scrubbed.
