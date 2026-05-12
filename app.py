@@ -50,6 +50,17 @@ class ImageCompressionApp(ctk.CTk):
         self.save_btn = ctk.CTkButton(self.sidebar_frame, text="Save Compressed", command=self.save_image, state="disabled")
         self.save_btn.pack(pady=10, padx=20)
 
+        # Zoom Slider
+        self.zoom_label = ctk.CTkLabel(self.sidebar_frame, text="Zoom scale: 100%")
+        self.zoom_label.pack(pady=(20, 0), padx=20, anchor="w")
+        self.zoom_slider = ctk.CTkSlider(self.sidebar_frame, from_=0.1, to=5.0, command=self.update_zoom)
+        self.zoom_slider.set(1.0)
+        self.zoom_slider.pack(pady=5, padx=20)
+
+        # Internal references for image resizing
+        self.display_orig_img = None
+        self.display_comp_img = None
+
         # --- Main Area (Images) ---
         self.main_frame = ctk.CTkFrame(self)
         self.main_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
@@ -67,17 +78,55 @@ class ImageCompressionApp(ctk.CTk):
         self.lbl_comp_title = ctk.CTkLabel(self.main_frame, text="Compressed Image", font=ctk.CTkFont(weight="bold"))
         self.lbl_comp_title.grid(row=0, column=1, pady=10)
         
-        self.lbl_orig_img = ctk.CTkLabel(self.main_frame, text="")
-        self.lbl_orig_img.grid(row=1, column=0, padx=10, pady=10)
+        self.frame_orig_img = ctk.CTkFrame(self.main_frame, width=350, height=350, fg_color="gray15")
+        self.frame_orig_img.grid(row=1, column=0, padx=10, pady=10)
+        self.frame_orig_img.pack_propagate(False)
+        self.frame_orig_img.grid_propagate(False)
+
+        self.frame_comp_img = ctk.CTkFrame(self.main_frame, width=350, height=350, fg_color="gray15")
+        self.frame_comp_img.grid(row=1, column=1, padx=10, pady=10)
+        self.frame_comp_img.pack_propagate(False)
+        self.frame_comp_img.grid_propagate(False)
         
-        self.lbl_comp_img = ctk.CTkLabel(self.main_frame, text="")
-        self.lbl_comp_img.grid(row=1, column=1, padx=10, pady=10)
+        self.lbl_orig_img = ctk.CTkLabel(self.frame_orig_img, text="")
+        self.lbl_orig_img.place(x=175, y=175, anchor="center")
+        
+        self.lbl_comp_img = ctk.CTkLabel(self.frame_comp_img, text="")
+        self.lbl_comp_img.place(x=175, y=175, anchor="center")
+        
+        # Setup panning variables and bindings
+        self.pan_x = 175
+        self.pan_y = 175
+        self.drag_start_x = 0
+        self.drag_start_y = 0
+        
+        self.lbl_orig_img.bind("<ButtonPress-1>", self.on_drag_start)
+        self.lbl_orig_img.bind("<B1-Motion>", self.on_drag_motion)
+        self.lbl_comp_img.bind("<ButtonPress-1>", self.on_drag_start)
+        self.lbl_comp_img.bind("<B1-Motion>", self.on_drag_motion)
         
         self.lbl_orig_size = ctk.CTkLabel(self.main_frame, text="")
         self.lbl_orig_size.grid(row=2, column=0, pady=(0, 10))
         
         self.lbl_comp_size = ctk.CTkLabel(self.main_frame, text="")
         self.lbl_comp_size.grid(row=2, column=1, pady=(0, 10))
+
+    def on_drag_start(self, event):
+        self.drag_start_x = event.x_root
+        self.drag_start_y = event.y_root
+
+    def on_drag_motion(self, event):
+        dx = event.x_root - self.drag_start_x
+        dy = event.y_root - self.drag_start_y
+        
+        self.drag_start_x = event.x_root
+        self.drag_start_y = event.y_root
+        
+        self.pan_x += dx
+        self.pan_y += dy
+        
+        self.lbl_orig_img.place(x=self.pan_x, y=self.pan_y, anchor="center")
+        self.lbl_comp_img.place(x=self.pan_x, y=self.pan_y, anchor="center")
 
     def select_image(self):
         filename = filedialog.askopenfilename(
@@ -89,15 +138,22 @@ class ImageCompressionApp(ctk.CTk):
             self.path_label.configure(text=os.path.basename(filename))
             
             img = Image.open(self.image_path)
+            self.display_orig_img = img.copy()
+            self.display_comp_img = None
             
             orig_kb = os.path.getsize(self.image_path) / 1024
             w, h = img.size
             self.lbl_orig_size.configure(text=f"Resolution: {w}x{h}\nFile Size: {orig_kb:.2f} KB")
             self.lbl_comp_size.configure(text="")
             
-            img.thumbnail((350, 350))
-            ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=img.size)
-            self.lbl_orig_img.configure(image=ctk_img, text="")
+            self.pan_x = 175
+            self.pan_y = 175
+            self.lbl_orig_img.place(x=self.pan_x, y=self.pan_y, anchor="center")
+            self.lbl_comp_img.place(x=self.pan_x, y=self.pan_y, anchor="center")
+            
+            self.zoom_slider.set(1.0)
+            self.update_zoom(1.0)
+            
             self.lbl_comp_img.configure(image="", text="Run compression to see result")
             self.save_btn.configure(state="disabled")
 
@@ -133,32 +189,52 @@ class ImageCompressionApp(ctk.CTk):
             comp_w, comp_h = comp_img.size
             
             io_buffer = io.BytesIO()
-            self.compressed_image_data.save(io_buffer, format="PNG")
+            self.compressed_image_data.save(io_buffer, format="JPEG")
             comp_kb = len(io_buffer.getvalue()) / 1024
             
             self.lbl_orig_size.configure(text=f"Resolution: {orig_w}x{orig_h}\nFile Size: {orig_kb:.2f} KB")
-            self.lbl_comp_size.configure(text=f"Resolution: {comp_w}x{comp_h}\nEst. Size (PNG): {comp_kb:.2f} KB")
+            self.lbl_comp_size.configure(text=f"Resolution: {comp_w}x{comp_h}\nEst. Size (JPEG): {comp_kb:.2f} KB")
             
-            orig_img.thumbnail((350, 350))
-            comp_img.thumbnail((350, 350))
-            
-            ctk_orig = ctk.CTkImage(light_image=orig_img, dark_image=orig_img, size=orig_img.size)
-            ctk_comp = ctk.CTkImage(light_image=comp_img, dark_image=comp_img, size=comp_img.size)
-            
-            self.lbl_orig_img.configure(image=ctk_orig, text="")
-            self.lbl_comp_img.configure(image=ctk_comp, text="")
+            self.display_orig_img = orig_img.copy()
+            self.display_comp_img = comp_img.copy()
+            self.update_zoom(self.zoom_slider.get())
             
         except Exception as e:
             messagebox.showerror("Processing Error", str(e))
+
+    def update_zoom(self, value):
+        scale = float(value)
+        self.zoom_label.configure(text=f"Zoom scale: {int(scale * 100)}%")
+        
+        if self.display_orig_img:
+            # We resize keeping aspect ratio relative to a baseline size, e.g., 350 max
+            base_w, base_h = self.display_orig_img.size
+            ratio = min(350 / base_w, 350 / base_h)
+            new_size = (int(base_w * ratio * scale), int(base_h * ratio * scale))
+            
+            if new_size[0] > 0 and new_size[1] > 0:
+                resized_orig = self.display_orig_img.resize(new_size, Image.LANCZOS)
+                ctk_orig = ctk.CTkImage(light_image=resized_orig, dark_image=resized_orig, size=resized_orig.size)
+                self.lbl_orig_img.configure(image=ctk_orig, text="")
+                
+        if self.display_comp_img:
+            base_w, base_h = self.display_comp_img.size
+            ratio = min(350 / base_w, 350 / base_h)
+            new_size = (int(base_w * ratio * scale), int(base_h * ratio * scale))
+            
+            if new_size[0] > 0 and new_size[1] > 0:
+                resized_comp = self.display_comp_img.resize(new_size, Image.LANCZOS)
+                ctk_comp = ctk.CTkImage(light_image=resized_comp, dark_image=resized_comp, size=resized_comp.size)
+                self.lbl_comp_img.configure(image=ctk_comp, text="")
 
     def save_image(self):
         if not self.compressed_image_data:
             return
             
         filename = filedialog.asksaveasfilename(
-            defaultextension=".bmp",
-            filetypes=[("BMP Files", "*.bmp"), ("PNG Files", "*.png"), ("JPEG Files", "*.jpg")],
-            title="Save compressed image"
+            defaultextension=".jpg",
+            title="Save compressed image",
+            filetypes=[("JPEG Files", "*.jpg;*.jpeg"), ("All Files", "*.*")]
         )
         
         if filename:
