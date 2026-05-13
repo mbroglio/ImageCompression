@@ -17,15 +17,11 @@ def run_performance_test():
         print(f"Testing N={N}...")
         test_mat = np.random.rand(N, N)
         
-        # We might skip custom_dct2 for N=1024 as it can take a long time and we only need it to show scaling
-        if N <= 512:
-            start = time.perf_counter()
-            custom_dct2(test_mat)
-            end = time.perf_counter()
-            custom_times.append(end - start)
-        else:
-            custom_times.append(np.nan)
-            
+        start = time.perf_counter()
+        custom_dct2(test_mat)
+        end = time.perf_counter()
+        custom_times.append(end - start)
+    
         start = time.perf_counter()
         fast_dct2(test_mat)
         end = time.perf_counter()
