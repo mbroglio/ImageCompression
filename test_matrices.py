@@ -34,48 +34,144 @@ expected_dct1_1D = np.array([
 ])
 
 def run_tests():
-    print("--- Running DCT Scaling Verification Tests ---")
+    print("=" * 90)
+    print("TEST DCT 1D - PRIMA RIGA DEL BLOCCHETTO 8×8")
+    print("=" * 90)
     
-    # Test 1D DCT on the first row
+    print(f"\nVettore di input (prima riga):")
+    print(test_vector_1D)
+    
     result_dct1 = custom_dct1(test_vector_1D)
     
-    print("\n1D DCT Result (first row):")
+    print(f"\nRisultato DCT 1D (custom_dct1):")
     print(result_dct1)
-    print("Expected 1D DCT Result:")
+    
+    print(f"\nValori attesi (da assignment):")
     print(expected_dct1_1D)
     
-    # We round to a single decimal place to check relative equality 
-    # since expected values were rounded to 3 sig-figs dynamically in the PDF (e.g. 1.21e+02).
-    diff1 = np.linalg.norm(result_dct1 - expected_dct1_1D) / np.linalg.norm(expected_dct1_1D)
+    # Calcolo errore
+    errore_1d = np.abs(result_dct1 - expected_dct1_1D)
+    errore_relativo_1d = 100 * np.linalg.norm(errore_1d) / np.linalg.norm(expected_dct1_1D)
     
-    if diff1 < 0.05:
-        print("-> 1D DCT Test: SUCCESS")
+    print(f"\nErrore assoluto massimo: {np.max(errore_1d):.6e}")
+    print(f"Errore relativo (norma L2): {errore_relativo_1d:.6f}%")
+    
+    print("\nDettaglio confronto elemento per elemento:")
+    print(f"{'Indice':<8} {'Risultato':<15} {'Atteso':<15} {'Errore':<15}")
+    print("-" * 55)
+    for i in range(len(result_dct1)):
+        err = abs(result_dct1[i] - expected_dct1_1D[i])
+        print(f"{i:<8} {result_dct1[i]:<15.6e} {expected_dct1_1D[i]:<15.6e} {err:<15.6e}")
+    
+    tolerance_1d = 5.0  # 5%
+    if errore_relativo_1d < tolerance_1d:
+        print(f"\n✓ TEST DCT 1D SUPERATO (errore {errore_relativo_1d:.6f}% < {tolerance_1d}%)")
     else:
-        print("-> 1D DCT Test: FAILED")
+        print(f"\n✗ TEST DCT 1D FALLITO (errore {errore_relativo_1d:.6f}% >= {tolerance_1d}%)")
         
-    # Test 2D Custom DCT
+    # Test 2D DCT on the full matrix
+    print("\n" + "=" * 90)
+    print("TEST DCT 2D - BLOCCHETTO 8×8 COMPLETO")
+    print("=" * 90)
+    
+    print(f"\nMatrice di input:")
+    print(test_matrix_8x8)
+    
     result_dct2_custom = custom_dct2(test_matrix_8x8)
     
-    print("\n2D Custom DCT2 Result:")
-    print("Difference from expected:", np.linalg.norm(result_dct2_custom - expected_dct2_8x8) / np.linalg.norm(expected_dct2_8x8))
+    print(f"\nRisultato DCT 2D (custom_dct2):")
+    print(result_dct2_custom)
+    
+    print(f"\nValori attesi (da assignment):")
+    print(expected_dct2_8x8)
+    
+    # Calcolo errore 2D
+    errore_2d = np.abs(result_dct2_custom - expected_dct2_8x8)
+    errore_relativo_2d = 100 * np.linalg.norm(errore_2d) / np.linalg.norm(expected_dct2_8x8)
+    
+    print(f"\nErrore assoluto massimo: {np.max(errore_2d):.6e}")
+    print(f"Errore relativo (norma L2): {errore_relativo_2d:.6f}%")
+    
+    print("\nDettaglio confronto (primis 3 elementi della prima riga):")
+    print(f"{'Risultato':<15} {'Atteso':<15} {'Errore':<15}")
+    print("-" * 45)
+    for i in range(3):
+        err = abs(result_dct2_custom[0, i] - expected_dct2_8x8[0, i])
+        print(f"{result_dct2_custom[0, i]:<15.6e} {expected_dct2_8x8[0, i]:<15.6e} {err:<15.6e}")
+    
+    tolerance_2d = 5.0  # 5%
+    if errore_relativo_2d < tolerance_2d:
+        print(f"\n✓ TEST DCT 2D (CUSTOM) SUPERATO (errore {errore_relativo_2d:.6f}% < {tolerance_2d}%)")
+    else:
+        print(f"\n✗ TEST DCT 2D (CUSTOM) FALLITO (errore {errore_relativo_2d:.6f}% >= {tolerance_2d}%)")
     
     # Test 2D Fast DCT
+    print("\n" + "=" * 90)
+    print("TEST DCT 2D - IMPLEMENTAZIONE VELOCE (scipy)")
+    print("=" * 90)
+    
     result_dct2_fast = fast_dct2(test_matrix_8x8)
     
-    diff2_custom = np.linalg.norm(result_dct2_custom - expected_dct2_8x8) / np.linalg.norm(expected_dct2_8x8)
-    diff2_fast = np.linalg.norm(result_dct2_fast - expected_dct2_8x8) / np.linalg.norm(expected_dct2_8x8)
+    errore_2d_fast = np.abs(result_dct2_fast - expected_dct2_8x8)
+    errore_relativo_2d_fast = 100 * np.linalg.norm(errore_2d_fast) / np.linalg.norm(expected_dct2_8x8)
     
-    if diff2_custom < 0.05:
-        print("-> 2D Custom DCT Test: SUCCESS")
+    print(f"\nErrore assoluto massimo: {np.max(errore_2d_fast):.6e}")
+    print(f"Errore relativo (norma L2): {errore_relativo_2d_fast:.6f}%")
+    
+    if errore_relativo_2d_fast < tolerance_2d:
+        print(f"✓ TEST DCT 2D (FAST) SUPERATO (errore {errore_relativo_2d_fast:.6f}% < {tolerance_2d}%)")
     else:
-        print("-> 2D Custom DCT Test: FAILED")
-        
-    if diff2_fast < 0.05:
-        print("-> 2D Fast Library DCT Test: SUCCESS")
+        print(f"✗ TEST DCT 2D (FAST) FALLITO (errore {errore_relativo_2d_fast:.6f}% >= {tolerance_2d}%)")
+    
+    # Test consistenza fra custom e fast
+    print("\n" + "=" * 90)
+    print("TEST CONSISTENZA: custom_dct2 vs fast_dct2")
+    print("=" * 90)
+    
+    differenza_custom_vs_fast = np.linalg.norm(result_dct2_custom - result_dct2_fast)
+    print(f"\nDifferenza (norma L2) fra custom_dct2 e fast_dct2: {differenza_custom_vs_fast:.6e}")
+    
+    if differenza_custom_vs_fast < 1e-10:
+        print("✓ Le due implementazioni sono numericamente identiche")
     else:
-        print("-> 2D Fast Library DCT Test: FAILED")
-        
-    print("\nIf all tests are SUCCESS, our ortho scaling identically matches the provided math lab requirements.")
+        print(f"⚠ Differenza rilevabile tra le implementazioni (< 1e-10)")
+    
+    # Test ortonormalità
+    print("\n" + "=" * 90)
+    print("TEST ORTONORMALITÀ: IDCT(DCT(x)) = x")
+    print("=" * 90)
+    
+    from dct import fast_idct2
+    
+    reconstructed = fast_idct2(result_dct2_custom)
+    reconstruction_error = np.linalg.norm(reconstructed - test_matrix_8x8) / np.linalg.norm(test_matrix_8x8)
+    reconstruction_error_max = np.max(np.abs(reconstructed - test_matrix_8x8))
+    
+    print(f"\nErrore di ricostruzione relativo: {reconstruction_error:.6e}")
+    print(f"Errore massimo elemento: {reconstruction_error_max:.6e}")
+    
+    if reconstruction_error < 1e-10:
+        print("✓ La proprietà di ortonormalità è verificata")
+    else:
+        print("✗ La proprietà di ortonormalità NON è verificata")
+    
+    # Riepilogo
+    print("\n" + "=" * 90)
+    print("RIEPILOGO RISULTATI")
+    print("=" * 90)
+    
+    all_pass = (
+        errore_relativo_1d < tolerance_1d and 
+        errore_relativo_2d < tolerance_2d and 
+        errore_relativo_2d_fast < tolerance_2d and
+        reconstruction_error < 1e-10
+    )
+    
+    print(f"DCT 1D:           {'✓ PASS' if errore_relativo_1d < tolerance_1d else '✗ FAIL'}")
+    print(f"DCT 2D (Custom):  {'✓ PASS' if errore_relativo_2d < tolerance_2d else '✗ FAIL'}")
+    print(f"DCT 2D (Fast):    {'✓ PASS' if errore_relativo_2d_fast < tolerance_2d else '✗ FAIL'}")
+    print(f"Ortonormalità:    {'✓ PASS' if reconstruction_error < 1e-10 else '✗ FAIL'}")
+    print(f"\nRisultato globale: {'✓✓✓ TUTTI I TEST SUPERATI ✓✓✓' if all_pass else '✗✗✗ ALCUNI TEST FALLITI ✗✗✗'}")
 
 if __name__ == "__main__":
     run_tests()

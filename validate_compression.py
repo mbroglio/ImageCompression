@@ -1,0 +1,120 @@
+import numpy as np
+from PIL import Image
+import time
+import csv
+from compressor import compress_image
+
+def calculate_psnr(original, compressed):
+    """
+    Calcola il PSNR tra immagine originale e compressa.
+    
+    PSNR = 10 * log10(255^2 / MSE)
+    """
+    # Converte entrambe a float per il calcolo
+    orig_array = np.array(original, dtype=float)
+    comp_array = np.array(compressed, dtype=float)
+    
+    # Calcola MSE
+    mse = np.mean((orig_array - comp_array) ** 2)
+    
+    if mse == 0:
+        return float('inf')
+    
+    psnr = 10 * np.log10(255**2 / mse)
+    return psnr
+
+def run_compression_tests():
+    """
+    Esegue i test di compressione su immagini reali con parametri variabili.
+    Calcola il tempo di esecuzione e salva i risultati in CSV.
+    """
+    
+    # Definizione test: (nome_immagine, parametri)
+    # parametri: lista di (F, d)
+    tests = [
+        ("gradient.bmp", [(8, 4), (8, 8), (8, 12), (8, 14)]),
+        ("bridge.bmp", [(8, 4), (8, 8), (8, 12), (16, 16)]),
+        ("shoe.bmp", [(8, 4), (8, 8), (8, 12), (4, 6)]),
+    ]
+    
+    print("=" * 90)
+    print("VALIDAZIONE COMPRESSIONE DCT - ESPERIMENTI SU IMMAGINI REALI")
+    print("=" * 90)
+    
+    results = []
+    
+    for img_name, params in tests:
+        image_path = f"images/{img_name}"
+        
+        try:
+            # Carica l'immagine originale (grayscale)
+            original_img = Image.open(image_path).convert('L')
+            original_array = np.array(original_img, dtype=float)
+            width, height = original_img.size
+            resolution = f"{width}×{height}"
+            
+            print(f"\n{'─' * 90}")
+            print(f"Immagine: {img_name} ({resolution})")
+            print(f"{'─' * 90}")
+            print(f"{'F':>3} | {'d':>3} | {'Tempo (ms)':>12}")
+            print(f"{'-'*3}-+-{'-'*3}-+-{'-'*12}")
+            
+            for F, d in params:
+                # Misura il tempo di compressione
+                start_time = time.perf_counter()
+                orig_img_trunc, compressed_img = compress_image(image_path, F, d)
+                end_time = time.perf_counter()
+                
+                elapsed_ms = (end_time - start_time) * 1000
+                
+                # Formatta i risultati
+                time_str = f"{elapsed_ms:.1f}"
+                
+                print(f"{F:>3} | {d:>3} | {time_str:>12}")
+                
+                results.append({
+                    'image': img_name,
+                    'resolution': resolution,
+                    'F': F,
+                    'd': d,
+                    'time_ms': elapsed_ms
+                })
+                
+        except FileNotFoundError:
+            print(f"⚠ Immagine non trovata: {image_path}")
+        except Exception as e:
+            print(f"❌ Errore durante l'elaborazione di {img_name}: {e}")
+    
+    # Salva i risultati in CSV
+    csv_file = "compression_results.csv"
+    try:
+        with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=['image', 'resolution', 'F', 'd', 'time_ms'])
+            writer.writeheader()
+            writer.writerows(results)
+        print(f"\n{'=' * 90}")
+        print(f"✓ Risultati salvati in: {csv_file}")
+        print(f"{'=' * 90}")
+    except Exception as e:
+        print(f"❌ Errore durante il salvataggio del CSV: {e}")
+    
+    # Stampa un riepilogo in formato LaTeX per facile copia nella tabella
+    print(f"\n{'=' * 90}")
+    print("FORMATO LATEX PER LA TABELLA")
+    print(f"{'=' * 90}\n")
+    
+    current_image = None
+    for result in results:
+        if current_image != result['image']:
+            current_image = result['image']
+            print(f"% {result['image']} ({result['resolution']})")
+        
+        print(f"& {result['F']} & {result['d']} & {result['time_ms']:.1f} \\\\")
+    
+    return results
+
+if __name__ == "__main__":
+    results = run_compression_tests()
+    print(f"\n{'=' * 90}")
+    print(f"✓ Test completati: {len(results)} configurazioni elaborate")
+    print(f"{'=' * 90}")
