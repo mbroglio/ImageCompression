@@ -113,8 +113,108 @@ def run_compression_tests():
     
     return results
 
+def test_fixed_F_varying_d():
+    """
+    Test con F fissato (F=8) e d variabile (d=2, 4, 8)
+    Misura i tempi di compressione per analizzare l'effetto del parametro d
+    """
+    print("\n" + "="*90)
+    print("ANALISI PARAMETRICA: F FISSATO (F=8), d VARIABILE (d=2, 4, 8)")
+    print("="*90)
+    
+    F = 8
+    d_values = [2, 4, 8]
+    image_path = "images/gradient.bmp"
+    
+    try:
+        original_img = Image.open(image_path).convert('L')
+        width, height = original_img.size
+        resolution = f"{width}×{height}"
+        
+        print(f"\nImmagine: gradient.bmp ({resolution})")
+        print(f"\n{'F':>3} | {'d':>3} | {'Tempo (ms)':>15}")
+        print("-"*35)
+        
+        results = []
+        for d in d_values:
+            start_time = time.perf_counter()
+            _, _ = compress_image(image_path, F, d)
+            end_time = time.perf_counter()
+            
+            elapsed_ms = (end_time - start_time) * 1000
+            print(f"{F:>3} | {d:>3} | {elapsed_ms:>15.2f}")
+            results.append((F, d, elapsed_ms))
+        
+        return results
+    except Exception as e:
+        print(f"❌ Errore: {e}")
+        return []
+
+def test_fixed_d_varying_F():
+    """
+    Test con d fissato (d=3) e F variabile (F=4, 10, 16)
+    Misura i tempi di compressione per analizzare l'effetto del parametro F
+    """
+    print("\n" + "="*90)
+    print("ANALISI PARAMETRICA: d FISSATO (d=3), F VARIABILE (F=4, 10, 16)")
+    print("="*90)
+    
+    d = 3
+    F_values = [4, 10, 16]
+    image_path = "images/gradient.bmp"
+    
+    try:
+        original_img = Image.open(image_path).convert('L')
+        width, height = original_img.size
+        resolution = f"{width}×{height}"
+        
+        print(f"\nImmagine: gradient.bmp ({resolution})")
+        print(f"\n{'F':>3} | {'d':>3} | {'Tempo (ms)':>15}")
+        print("-"*35)
+        
+        results = []
+        for F in F_values:
+            # Verifica che d sia valido per questo F (0 <= d <= 2F-2)
+            max_d = 2 * F - 2
+            if d > max_d:
+                print(f"{F:>3} | {d:>3} | {'N/A (d > 2F-2)':>15}")
+                continue
+                
+            start_time = time.perf_counter()
+            _, _ = compress_image(image_path, F, d)
+            end_time = time.perf_counter()
+            
+            elapsed_ms = (end_time - start_time) * 1000
+            print(f"{F:>3} | {d:>3} | {elapsed_ms:>15.2f}")
+            results.append((F, d, elapsed_ms))
+        
+        return results
+    except Exception as e:
+        print(f"❌ Errore: {e}")
+        return []
+
 if __name__ == "__main__":
     results = run_compression_tests()
     print(f"\n{'=' * 90}")
     print(f"✓ Test completati: {len(results)} configurazioni elaborate")
     print(f"{'=' * 90}")
+    
+    # Esegui i test parametrici
+    results_f_var = test_fixed_F_varying_d()
+    results_d_var = test_fixed_d_varying_F()
+    
+    print("\n" + "="*90)
+    print("RIEPILOGO ANALISI PARAMETRICA")
+    print("="*90)
+    
+    if results_f_var:
+        print("\nAnalisi 1 - F=8 variabile d:")
+        for F, d, t in results_f_var:
+            print(f"  F={F}, d={d}: {t:.2f} ms")
+    
+    if results_d_var:
+        print("\nAnalisi 2 - d=3 variabile F:")
+        for F, d, t in results_d_var:
+            print(f"  F={F}, d={d}: {t:.2f} ms")
+    
+    print(f"\n{'=' * 90}")
