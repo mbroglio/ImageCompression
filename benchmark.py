@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import csv
 from dct import custom_dct2, fast_dct2
 
 def run_performance_test():
@@ -58,6 +59,28 @@ def run_performance_test():
     print("\nSaving plot to 'performance_comparison.png'...")
     plt.savefig('performance_comparison.png', dpi=150)
     plt.show()
+    
+    # Save results to CSV
+    save_benchmark_to_csv(custom_sizes, custom_times, fast_times)
+
+def save_benchmark_to_csv(sizes, custom_times, fast_times):
+    """
+    Save benchmark results to CSV file with columns:
+    Matrix Size, Custom DCT (ms), Fast DCT (ms), Ratio
+    """
+    filename = 'benchmark_results.csv'
+    
+    with open(filename, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Matrix Size (N)', 'Custom DCT (ms)', 'Fast DCT (ms)', 'Ratio'])
+        
+        for i, size in enumerate(sizes):
+            custom_ms = custom_times[i] * 1000
+            fast_ms = fast_times[i] * 1000
+            ratio = custom_ms / fast_ms if fast_ms > 0 else 0
+            writer.writerow([size, f'{custom_ms:.3f}', f'{fast_ms:.3f}', f'{ratio:.2f}x'])
+    
+    print(f"CSV saved to '{filename}'")
 
 if __name__ == "__main__":
     run_performance_test()
