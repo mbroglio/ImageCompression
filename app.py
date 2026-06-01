@@ -38,7 +38,7 @@ class ImageCompressionApp(ctk.CTk):
         self.f_entry.pack(pady=5, padx=20)
         
         # d Entry
-        self.d_label = ctk.CTkLabel(self.sidebar_frame, text="Cutoff threshold (d < 2F - 2):")
+        self.d_label = ctk.CTkLabel(self.sidebar_frame, text="Cutoff threshold (d <= 2F - 2):")
         self.d_label.pack(pady=(10, 0), padx=20, anchor="w")
         
         self.d_entry = ctk.CTkEntry(self.sidebar_frame, placeholder_text="e.g. 4")
