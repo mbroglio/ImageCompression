@@ -172,7 +172,7 @@ class ImageCompressionApp(ctk.CTk):
             orig_kb = os.path.getsize(self.image_path) / 1024
             w, h = img.size
             self.lbl_orig_size.configure(
-                text=f"Resolution: {w}x{h}\nFile Size: {orig_kb:.2f} KB"
+                text=f"Resolution: {w}x{h}\nFile Size (su disco): {orig_kb:.2f} KB"
             )
             self.lbl_comp_size.configure(text="")
 
@@ -218,19 +218,21 @@ class ImageCompressionApp(ctk.CTk):
             self.compressed_image_data = comp_img.copy()
             self.save_btn.configure(state="normal")
 
-            orig_kb = os.path.getsize(self.image_path) / 1024
             orig_w, orig_h = orig_img.size
             comp_w, comp_h = comp_img.size
 
-            io_buffer = io.BytesIO()
-            self.compressed_image_data.save(io_buffer, format="BMP", quality=100)
-            comp_kb = len(io_buffer.getvalue()) / 1024
+            BMP_HEADER_8BIT = 1078
+            orig_kb = (orig_w * orig_h + BMP_HEADER_8BIT) / 1024
+
+            comp_buffer = io.BytesIO()
+            self.compressed_image_data.save(comp_buffer, format="PNG", optimize=True)
+            comp_kb = len(comp_buffer.getvalue()) / 1024
 
             self.lbl_orig_size.configure(
-                text=f"Resolution: {orig_w}x{orig_h}\nFile Size: {orig_kb:.2f} KB"
+                text=f"Resolution: {orig_w}x{orig_h}\nGrayscale BMP: {orig_kb:.2f} KB"
             )
             self.lbl_comp_size.configure(
-                text=f"Resolution: {comp_w}x{comp_h}\nEst. Size (BMP): {comp_kb:.2f} KB"
+                text=f"Resolution: {comp_w}x{comp_h}\nEst. DCT2 Size: {comp_kb:.2f} KB"
             )
 
             self.display_orig_img = orig_img.copy()
@@ -245,7 +247,7 @@ class ImageCompressionApp(ctk.CTk):
         self.zoom_label.configure(text=f"Zoom scale: {int(scale * 100)}%")
 
         if self.display_orig_img:
-            # We resize keeping aspect ratio relative to a baseline size, e.g., 350 max
+            # We resize keeping aspect ratio relative to a baseline size
             base_w, base_h = self.display_orig_img.size
             ratio = min(350 / base_w, 350 / base_h)
             new_size = (int(base_w * ratio * scale), int(base_h * ratio * scale))
@@ -285,7 +287,7 @@ class ImageCompressionApp(ctk.CTk):
 
         if filename:
             try:
-                self.compressed_image_data.save(filename, quality=100, format="BMP")
+                self.compressed_image_data.save(filename, format="BMP")
                 messagebox.showinfo(
                     "Success", f"Image saved successfully to:\n{filename}"
                 )
